@@ -69,12 +69,29 @@ typora-copy-images-to: ../../public/images
 "
       File.open(options[:path], 'w+') do |file|
         markdown = p.to_markdown
-        markdown = markdown.split("\n\n").map{ |x|
-          if x.index("##")
-            x
-          else
-            x.gsub("\n", "")
+        in_src = false
+        src_hash = {}
+        markdown.split("\n").each do |l|
+          if l.index("```")
+            if in_src
+              in_src = false
+            else
+              in_src = true
+            end
           end
+          if in_src
+            src_hash[l] = true
+          end
+        end
+
+        markdown = markdown.split("\n\n").map{ |part|
+          part.split("\n").map{ |x|
+            if x.index("##") || src_hash[x]
+              x + "\n"
+            else
+              x
+            end
+          }.join("")
         }.join("\n\n")
         file.write blog_header + markdown
         puts "finished generate markdown: #{options[:path]} ..."
