@@ -1,2 +1,3 @@
 *.tmproj
+*.gem
 /util/gen-special-replace.elc

@@ -67,9 +67,17 @@ typora-root-url: ../../public
 typora-copy-images-to: ../../public/images
 ---\n
 "
-      puts p.to_markdown.class
       File.open(options[:path], 'w+') do |file|
-        file.write blog_header + p.to_markdown
+        markdown = p.to_markdown
+        markdown = markdown.split("\n\n").map{ |x|
+          if x.index("##")
+            x
+          else
+            x.gsub("\n", "")
+          end
+        }.join("\n\n")
+        file.write blog_header + markdown
+        puts "finished generate markdown: #{options[:path]} ..."
       end
     elsif options[:format] == :markdown
       puts p.to_markdown
