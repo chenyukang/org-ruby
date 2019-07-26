@@ -53,9 +53,12 @@ module Orgmode
         # empty value forces the image to be inlined.
         defi ||= link if link =~ @re_help.org_image_file_regexp
         link = link.gsub(/ /, "%%20")
+        puts "debug now: #{defi} #{link}"
         if defi =~ @re_help.org_image_file_regexp
           file =  defi.gsub("file:", "")
-          `cp #{file} ~/code/chenyukang.github.io/public/images/`
+          cmd = "cp #{file} ~/code/chenyukang.github.io/public/images/"
+          puts "#{cmd}"
+          `#{cmd}`
           target = defi.gsub("file:img", "/images")
           "![#{defi}](#{target})"
         elsif defi

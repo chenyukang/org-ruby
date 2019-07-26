@@ -6,7 +6,7 @@ options = {}
 options_parser = OptionParser.new do |opts|
   options[:help] = false
   options[:format] = :html
-  
+
   opts.banner = "Usage: org-ruby <file> [options]"
 
   opts.on("-h", "--help", "Show this message") do |v|
@@ -29,7 +29,18 @@ options_parser = OptionParser.new do |opts|
   opts.on("-v", "--version", "Print version") do |v|
     options[:version] = true
   end
+
+  opts.on("-t", "--title <title>", "Blog output title") do |t|
+    options[:title] = t
+  end
+
+  opts.on("-p", "--path <path>", "Blog output path") do |p|
+    options[:path] = p
+  end
+
 end
+
+
 
 begin
   options_parser.parse!
@@ -47,7 +58,22 @@ begin
     $DEBUG = true if options[:debug]
     puts p.to_html if options[:format] == :html
     puts p.to_textile if options[:format] == :textile
-    puts p.to_markdown if options[:format] == :markdown
+    if options[:title] != nil
+      blog_header = "---
+layout: post
+title: #{options[:title]}
+date: #{Time.now.to_s.split(" ").first(2).join}
+typora-root-url: ../../public
+typora-copy-images-to: ../../public/images
+---\n
+"
+      puts p.to_markdown.class
+      File.open(options[:path], 'w+') do |file|
+        file.write blog_header + p.to_markdown
+      end
+    elsif options[:format] == :markdown
+      puts p.to_markdown
+    end
   end
 rescue OptionParser::ParseError
   puts options_parser
