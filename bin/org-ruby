@@ -44,21 +44,17 @@ options_parser = OptionParser.new do |opts|
 
 end
 
-def process_title(markdown)
+def process_title(buffer)
   title = nil
   path = nil
-  res = markdown.split("\n").map { |line|
-    if line.index(":title=") == 0
-      title = line.split("=").last
-      ""
-    elsif line.index(":path=") == 0
-      path = line.split("=").last
-      ""
-    else
-      line
+  buffer.split("\n").each { |line|
+    if line.index("#+MD_TITLE") == 0
+      title = line.split(":").last.strip
+    elsif line.index("#+MD_PATH") == 0
+      path = line.split(":").last.strip
     end
-  }.join("\n")
-  return title, path, res
+  }
+  return title, path
 end
 
 def process_fill_paragraph(markdown)
@@ -80,8 +76,12 @@ def process_fill_paragraph(markdown)
   markdown.split("\n\n").map{ |part|
     lines = part.split("\n")
     lines.each_with_index.map{ |x, i|
-      if x.strip.index("#") == 0 ||
-         (i+1 < lines.length && lines[i+1].strip.index("#") == 0) ||
+      l = x.strip
+      if l.index("#") == 0 ||
+         (i+1 < lines.length &&
+          (lines[i+1].strip.index("#") == 0 ||
+           lines[i+1].strip.index("*") == 0 ||
+           lines[i+1].strip.index("Entered on") == 0)) ||
          src_hash[x]
         x + "\n"
       else
@@ -124,9 +124,10 @@ begin
     puts p.to_textile if options[:format] == :textile
     if options[:title] != nil || options[:auto]
       markdown = p.to_markdown
-      title, path, markdown = process_title(markdown)
+      title, path = process_title(data)
       title = options[:title] || title
       path = (options[:path] || "/Users/kang/code/chenyukang.github.io/source/_posts/#{path}").strip
+      puts "writing: #{path} ..."
       blog_header = "---
 layout: post
 title: #{title}
