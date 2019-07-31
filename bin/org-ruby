@@ -6,7 +6,7 @@ options = {}
 options_parser = OptionParser.new do |opts|
   options[:help] = false
   options[:format] = :html
-  
+
   opts.banner = "Usage: org-ruby <file> [options]"
 
   opts.on("-h", "--help", "Show this message") do |v|
@@ -29,6 +29,19 @@ options_parser = OptionParser.new do |opts|
   opts.on("-v", "--version", "Print version") do |v|
     options[:version] = true
   end
+
+  opts.on("-t", "--title <title>", "Blog output title") do |t|
+    options[:title] = t
+  end
+
+  opts.on("-p", "--path <path>", "Blog output path") do |p|
+    options[:path] = p
+  end
+
+  opts.on("-a", "--auto", "Auto generate blog markdown") do |p|
+    options[:auto] = true
+  end
+
 end
 
 begin
@@ -38,17 +51,22 @@ begin
     puts OrgRuby::VERSION
     exit
   end
-
   if (ARGV.length == 0) then
     puts options_parser
   else
     data = IO.read(ARGV[0])
     p = Orgmode::Parser.new(data, (options[:markup_file] ? {:markup_file => options[:markup_file]} : {}))
     $DEBUG = true if options[:debug]
-    puts p.to_html if options[:format] == :html
-    puts p.to_textile if options[:format] == :textile
-    puts p.to_markdown if options[:format] == :markdown
+    if !options[:title].nil? || options[:auto]
+      p.write_to_markdown(options)
+    else
+      puts p.to_html if options[:format] == :html
+      puts p.to_textile if options[:format] == :textile
+      puts p.to_markdown if options[:format] == :markdown
+    end
   end
 rescue OptionParser::ParseError
   puts options_parser
 end
+
+

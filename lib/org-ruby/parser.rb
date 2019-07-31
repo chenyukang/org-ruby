@@ -377,9 +377,35 @@ module Orgmode
       output << "\n"
 
       return output if @parser_options[:skip_rubypants_pass]
-        
-      rp = RubyPants.new(output) 
+
+      rp = RubyPants.new(output)
       rp.to_html
+    end
+
+    def write_to_markdown(options)
+      markdown = to_markdown
+      title, path = process_title(@lines)
+      title = options[:title] || title
+      path = (options[:path] || File.expand_path("~/code/chenyukang.github.io/source/_posts/#{path}")).strip
+      if title.strip.nil?
+        puts "No title ...."
+        exit(1)
+      end
+      puts "writing: #{path} ..."
+      blog_header = "---
+layout: post
+title: #{title}
+date: #{Time.now.to_s.split(" ").first(2).join(" ")}
+typora-root-url: ../../public
+typora-copy-images-to: ../../public/images
+---\n
+"
+      markdown = process_fill_paragraph(markdown)
+      markdown = process_image_size(markdown)
+      File.open(path, 'w+') do |fp|
+        fp.write blog_header + markdown
+        puts "finished generate markdown: #{path} ..."
+      end
     end
 
     ######################################################################
@@ -468,5 +494,71 @@ module Orgmode
         @in_buffer_settings[key] = value
       end
     end
+
+
+    def process_title(lines)
+      title = nil
+      path = nil
+      lines.each { |line|
+        if line.index("#+MD_TITLE") == 0
+          title = line.split(":").last.strip
+        elsif line.index("#+MD_PATH") == 0
+          path = line.split(":").last.strip
+        end
+      }
+      return title, path
+    end
+
+    def process_fill_paragraph(markdown)
+      in_src = false
+      src_hash = {}
+      markdown.split("\n").each do |l|
+        if l.index("```")
+          if in_src
+            in_src = false
+          else
+            in_src = true
+          end
+        end
+        if in_src
+          src_hash[l] = true
+        end
+      end
+
+      markdown.split("\n\n").map{ |part|
+        lines = part.split("\n")
+        lines.each_with_index.map{ |x, i|
+          l = x.strip
+          if l.index("#") == 0 ||
+             (i+1 < lines.length &&
+              (lines[i+1].strip.index("#") == 0 ||
+               lines[i+1].strip.index("*") == 0 ||
+               lines[i+1].strip.index("http") == 0 ||
+               lines[i+1].strip.index("Entered on") == 0)) ||
+             src_hash[x]
+            x + "\n"
+          else
+            x
+          end
+        }.join("")
+      }.join("\n\n")
+    end
+
+    def process_image_size(markdown)
+      markdown.split("\n").map { |line|
+        if line.index(")(=") && line.index("![") == 0
+          attrs = line.split("](").last.split(")(=")
+          img = attrs.first
+          size = attrs.last.gsub(")", '')
+          width = size.split("*").first
+          height = size.split("*").last
+          "<img src=\"#{img}\" width=\"#{width}\" hegiht=\"#{height}\" align=center />"
+        else
+          line
+        end
+      }.join("\n")
+    end
+
+
   end                             # class Parser
 end                               # module Orgmode

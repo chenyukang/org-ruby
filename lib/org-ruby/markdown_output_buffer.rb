@@ -51,11 +51,15 @@ module Orgmode
       @re_help.rewrite_links input do |link, defi|
         # We don't add a description for images in links, because its
         # empty value forces the image to be inlined.
-        defi ||= link unless link =~ @re_help.org_image_file_regexp
+        defi ||= link if link =~ @re_help.org_image_file_regexp
         link = link.gsub(/ /, "%%20")
-
         if defi =~ @re_help.org_image_file_regexp
-          "![#{defi}](#{defi})"
+          file =  defi.gsub("file:", "")
+          cmd = "cp #{file} ~/code/chenyukang.github.io/public/images/"
+          puts "#{cmd} ... "
+          `#{cmd}`
+          target = defi.gsub("file:img", "/images")
+          "![#{defi}](#{target})"
         elsif defi
           "[#{defi}](#{link})"
         else
