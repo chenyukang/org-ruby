@@ -509,6 +509,29 @@ typora-copy-images-to: ../../public/images
       return title, path
     end
 
+    def is_chinese_char(str)
+      list_of_chars = str.unpack("U*")
+      char = list_of_chars.last
+      return false if char.nil?
+      #main blocks
+      if char >= 0x4E00 && char <= 0x9FFF
+        return true
+      end
+      #extended block A
+      if char >= 0x3400 && char <= 0x4DBF
+        return true
+      end
+      #extended block B
+      if char >= 0x20000 && char <= 0x2A6DF
+        return true
+      end
+      #extended block C
+      if char >= 0x2A700 && char <= 0x2B73F
+        return true
+      end
+      return false
+    end
+
     def process_fill_paragraph(markdown)
       in_src = false
       src_hash = {}
@@ -525,23 +548,42 @@ typora-copy-images-to: ../../public/images
         end
       end
 
-      markdown.split("\n\n").map{ |part|
-        lines = part.split("\n")
-        lines.each_with_index.map{ |x, i|
-          l = x.strip
-          if l.index("#") == 0 ||
-             (i+1 < lines.length &&
-              (lines[i+1].strip.index("#") == 0 ||
-               lines[i+1].strip.index("*") == 0 ||
-               lines[i+1].strip.index("http") == 0 ||
-               lines[i+1].strip.index("Entered on") == 0)) ||
-             src_hash[x]
-            x + "\n"
-          else
-            x
+      buffer = ""
+      empty_count = 0
+      lines = markdown.split("\n")
+      lines.each_with_index do |x, i|
+        l = x.strip
+        nl = (i + 1 < lines.length) ? lines[i+1].strip : ""
+        if l.size == 0
+          empty_count += 1
+        else
+          if empty_count > 0
+            count = src_hash[x] ? empty_count : (empty_count + 1)
+            buffer += ("\n" * count)
+            empty_count = 0
           end
-        }.join("")
-      }.join("\n\n")
+          if src_hash[x] ||
+             l.index("#") == 0 ||
+             (nl.index("#") == 0 ||
+              nl.index("*") == 0 ||
+              nl.index("http") == 0 ||
+              nl.index("Entered on") == 0)
+            d = l.index("`") == 0 ? "\n#{x}\n" : "#{x}\n"
+            if i > 0 && !is_chinese_char(lines[i-1])
+              buffer += (" " + d)
+            else
+              buffer += d
+            end
+          else
+            if i > 0 && !is_chinese_char(lines[i-1])
+              buffer += (" " + x)
+            else
+              buffer += x
+            end
+          end
+        end
+      end
+      buffer
     end
 
     def process_image_size(markdown)
