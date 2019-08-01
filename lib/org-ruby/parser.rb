@@ -509,33 +509,17 @@ typora-copy-images-to: ../../public/images
       return title, path
     end
 
-    def is_chinese_char(str)
+    def last_is_english_char(str)
       list_of_chars = str.unpack("U*")
       char = list_of_chars.last
       return false if char.nil?
-      #main blocks
-      if char >= 0x4E00 && char <= 0x9FFF
-        return true
-      end
-      #extended block A
-      if char >= 0x3400 && char <= 0x4DBF
-        return true
-      end
-      #extended block B
-      if char >= 0x20000 && char <= 0x2A6DF
-        return true
-      end
-      #extended block C
-      if char >= 0x2A700 && char <= 0x2B73F
-        return true
-      end
-      return false
+      char <= 256
     end
 
     def process_fill_paragraph(markdown)
       in_src = false
       src_hash = {}
-      markdown.split("\n").each do |l|
+      markdown.split("\n").each_with_index do |l, i|
         if l.index("```")
           if in_src
             in_src = false
@@ -544,43 +528,31 @@ typora-copy-images-to: ../../public/images
           end
         end
         if in_src
-          src_hash[l] = true
+          src_hash[i] = true
         end
       end
 
       buffer = ""
-      empty_count = 0
       lines = markdown.split("\n")
       lines.each_with_index do |x, i|
         l = x.strip
-        nl = (i + 1 < lines.length) ? lines[i+1].strip : ""
-        if l.size == 0
-          empty_count += 1
+        nl = (i + 1 < lines.length) ? lines[i+1].strip : ''
+        if src_hash[i] ||
+           l.index("#") == 0 ||
+           l.index(">") == 0 ||
+              (nl.index("#") == 0 ||
+               nl.index("*") == 0 ||
+               nl.index("http") == 0 ||
+               nl.index("Entered on") == 0)
+          buffer += x + "\n"
         else
-          if empty_count > 0
-            count = src_hash[x] ? empty_count : (empty_count + 1)
-            buffer += ("\n" * count)
-            empty_count = 0
-          end
-          if src_hash[x] ||
-             l.index("#") == 0 ||
-             (nl.index("#") == 0 ||
-              nl.index("*") == 0 ||
-              nl.index("http") == 0 ||
-              nl.index("Entered on") == 0)
-            d = l.index("`") == 0 ? "\n#{x}\n" : "#{x}\n"
-            buffer += d
-            # if i > 0 && !is_chinese_char(lines[i-1])
-            #   buffer += (" " + d)
-            # else
-            #   buffer += d
-            # end
+          if i > 0 && last_is_english_char(lines[i-1].strip) && l.index('*') != 0
+            buffer += (" " + x)
           else
-            if i > 0 && !is_chinese_char(lines[i-1]) && l.index('*') != 0
-              buffer += (" " + x)
-            else
-              buffer += x
-            end
+            buffer += x
+          end
+          if nl == ""
+            buffer += "\n\n"
           end
         end
       end
