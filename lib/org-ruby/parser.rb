@@ -569,13 +569,14 @@ typora-copy-images-to: ../../public/images
               nl.index("http") == 0 ||
               nl.index("Entered on") == 0)
             d = l.index("`") == 0 ? "\n#{x}\n" : "#{x}\n"
-            if i > 0 && !is_chinese_char(lines[i-1])
-              buffer += (" " + d)
-            else
-              buffer += d
-            end
+            buffer += d
+            # if i > 0 && !is_chinese_char(lines[i-1])
+            #   buffer += (" " + d)
+            # else
+            #   buffer += d
+            # end
           else
-            if i > 0 && !is_chinese_char(lines[i-1])
+            if i > 0 && !is_chinese_char(lines[i-1]) && l.index('*') != 0
               buffer += (" " + x)
             else
               buffer += x
