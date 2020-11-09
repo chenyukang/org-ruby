@@ -386,7 +386,9 @@ module Orgmode
       markdown = to_markdown
       title, path = process_title(@lines)
       title = options[:title] || title
-      path = (options[:path] || File.expand_path("~/code/chenyukang.github.io/source/_posts/#{path}")).strip
+      path = (options[:path] || File.expand_path("~/coderscat-source/source/_posts/#{path}")).strip
+      tag = try_to_get_tags(@lines)
+      date = try_to_get_date(@lines)
       if title.strip.nil?
         puts "No title ...."
         exit(1)
@@ -395,6 +397,8 @@ module Orgmode
       blog_header = "---
 layout: post
 title: #{title}
+date: #{date}
+tags: [#{tag}]
 date: #{Time.now.to_s.split(" ").first(2).join(" ")}
 typora-root-url: ../../public
 typora-copy-images-to: ../../public/images
@@ -507,6 +511,27 @@ typora-copy-images-to: ../../public/images
         end
       }
       return title, path
+    end
+
+    def try_to_get_tags(lines)
+      category = lines.find{|x| x.index("#+CATEGORY:") }
+      if category.nil?
+        return ""
+      end
+      return category.gsub("#+CATEGORY:", "").strip
+    end
+
+    def try_to_get_date(lines)
+      value = lines.find{|x| x.index("#+DATE:") }
+      if value.nil?
+        return ""
+      end
+      elems = value.gsub("#+DATE:", "").gsub("[", "").gsub("]", "").split
+      if elems.size >= 3
+        return elems[0] + " " + elems[1]
+      else 
+        return ""
+      end      
     end
 
     def last_is_english_char(str)
