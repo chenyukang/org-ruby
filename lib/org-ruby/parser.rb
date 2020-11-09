@@ -388,7 +388,8 @@ module Orgmode
       title = options[:title] || title
       path = (options[:path] || File.expand_path("~/coderscat-source/source/_posts/#{path}")).strip
       tag = try_to_get_tags(@lines)
-      date = try_to_get_date(@lines)
+      excerpt = try_to_get_excerpt(@lines)
+      date = try_to_get_date(@lines) || Time.now.to_s.split(" ").first(2).join(" ")
       if title.strip.nil?
         puts "No title ...."
         exit(1)
@@ -399,11 +400,14 @@ layout: post
 title: #{title}
 date: #{date}
 tags: [#{tag}]
-date: #{Time.now.to_s.split(" ").first(2).join(" ")}
 typora-root-url: ../../public
 typora-copy-images-to: ../../public/images
 ---\n
 "
+      if excerpt.to_s.size >= 3 
+        blog_header += "<!-- block -->\n#{excerpt}\n<!-- block -->\n";
+      end
+
       markdown = process_fill_paragraph(markdown)
       markdown = process_image_size(markdown)
       File.open(path, 'w+') do |fp|
@@ -505,9 +509,9 @@ typora-copy-images-to: ../../public/images
       path = nil
       lines.each { |line|
         if line.index("#+MD_TITLE") == 0
-          title = line.split(":").last.strip
+          title = line.gsub("#+MD_TITLE:", "").strip
         elsif line.index("#+MD_PATH") == 0
-          path = line.split(":").last.strip
+          path = line.gsub("#+MD_PATH:", "").strip
         end
       }
       return title, path
@@ -528,11 +532,20 @@ typora-copy-images-to: ../../public/images
       end
       elems = value.gsub("#+DATE:", "").gsub("[", "").gsub("]", "").split
       if elems.size >= 3
-        return elems[0] + " " + elems[1]
+        return elems[0] + " " + elems[2]
       else 
-        return ""
+        return nil
       end      
     end
+
+    def try_to_get_excerpt(lines)
+      value = lines.find{|x| x.index("#+DESCRIPTION:") }
+      if value.nil?
+        return ""
+      end
+      return value.gsub("#+DESCRIPTION:", "").to_s.gsub("[", "").gsub("]", "").strip
+    end
+
 
     def last_is_english_char(str)
       list_of_chars = str.unpack("U*")

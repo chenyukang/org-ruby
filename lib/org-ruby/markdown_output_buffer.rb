@@ -55,7 +55,7 @@ module Orgmode
         link = link.gsub(/ /, "%%20")
         if defi =~ @re_help.org_image_file_regexp
           file =  defi.gsub("file:", "")
-          cmd = "cp #{file} ~/code/chenyukang.github.io/public/images/"
+          cmd = "cp #{file} ~/coderscat-source/public/images/"
           puts "#{cmd} ... "
           `#{cmd}`
           target = defi.gsub("file:img", "/images")
